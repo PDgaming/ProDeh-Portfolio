@@ -18,7 +18,7 @@ export interface Command {
 	run: (argv: string[]) => string | void | Promise<string | void>;
 }
 
-export const prompt = 'visitor@prodeh:~$';
+export const prompt = 'prodeh:~$';
 
 function help(argv: string[]): string {
 	void argv;
