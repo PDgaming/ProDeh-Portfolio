@@ -51,12 +51,14 @@
 	}
 </script>
 
-<div class="repositories bg-base-100 flex h-full w-full flex-col items-center gap-3">
-	<h1 class="text-3xl">Projects I have worked on:</h1>
+<div
+	class="repositories app-scroll bg-base-100 flex h-full w-full flex-col items-center gap-3 px-3 pt-3 pb-6"
+>
+	<h1 class="font-display text-3xl">Projects I have worked on:</h1>
 	{#await reposPromise}
 		<p>Loading repositories...</p>
 	{:then repos}
-		<div class="project-list flex flex-wrap justify-center gap-3 overflow-y-scroll">
+		<div class="project-list flex flex-wrap justify-center gap-3 px-1 pb-2">
 			<div class="card bg-base-300 h-45 w-80 shadow-sm">
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external URL -->
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external URL -->

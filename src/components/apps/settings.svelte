@@ -16,7 +16,7 @@
 	}
 </script>
 
-<div class="settings bg-base-100 flex h-full w-full flex-col gap-3 overflow-y-scroll p-2">
+<div class="settings app-scroll bg-base-100 flex h-full w-full flex-col gap-3 px-3 pt-3 pb-6">
 	<div class="theme-selector">
 		<h2 class="text-xl">Theme</h2>
 		<label class="flex cursor-pointer gap-2">

@@ -8,7 +8,9 @@
 	] as const;
 </script>
 
-<div class="skills bg-base-100 flex h-full w-full flex-col items-center gap-3 overflow-scroll p-2">
+<div
+	class="skills app-scroll bg-base-100 flex h-full w-full flex-col items-center gap-3 px-3 pt-3 pb-8"
+>
 	<h1 class="text-3xl font-bold">My Skills</h1>
 
 	<div class="flex w-full max-w-6xl flex-wrap justify-center gap-6">
