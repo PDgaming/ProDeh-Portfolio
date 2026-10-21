@@ -7,10 +7,13 @@
 		windowState,
 		currentBackgroundImage,
 		backgroundImages,
-		appsList
+		appsList,
+		isMobile,
+		initDeviceDetection
 	} from '$lib/store/store.svelte';
 	import { onMount, untrack, type Component } from 'svelte';
 	import Desktop from '@components/Desktop.svelte';
+	import Phone from '@components/Phone.svelte';
 	import AboutMe from '@components/apps/aboutMe.svelte';
 	import Projects from '@components/apps/projects.svelte';
 	import Settings from '@components/apps/settings.svelte';
@@ -44,6 +47,9 @@
 	let ogImage = $derived($page.url.origin ? $page.url.origin + '/og.png' : '');
 
 	onMount(() => {
+		// Device switch (desktop vs phone branch)
+		initDeviceDetection();
+
 		// Theme
 		const storedTheme = localStorage.getItem('Theme');
 		if (storedTheme) {
@@ -110,19 +116,27 @@
 </svelte:head>
 
 <div class="main-content border-base-300 flex h-screen w-screen flex-col overflow-hidden">
-	<div class="background h-full w-full" id="background-image" style={bgStyle}>
-		<div class="desktop">
-			<Desktop />
-		</div>
-		{#if currentApp.value && windowState.value !== 'minimized'}
-			<Window>
-				<App />
-			</Window>
-		{/if}
+	{#if isMobile.value}
+		<Phone />
 		<!-- App route pages exist only to make the URLs real; the layout above -->
-		<!-- opens the window from the pathname. -->
+		<!-- opens the window from the pathname. Error pages render independently -->
+		<!-- of the device branch, so keep the children slot outside the {#if}. -->
 		{@render children()}
-	</div>
+	{:else}
+		<div class="background h-full w-full" id="background-image" style={bgStyle}>
+			<div class="desktop">
+				<Desktop />
+			</div>
+			{#if currentApp.value && windowState.value !== 'minimized'}
+				<Window>
+					<App />
+				</Window>
+			{/if}
+			<!-- App route pages exist only to make the URLs real; the layout above -->
+			<!-- opens the window from the pathname. -->
+			{@render children()}
+		</div>
+	{/if}
 </div>
 
 <style>

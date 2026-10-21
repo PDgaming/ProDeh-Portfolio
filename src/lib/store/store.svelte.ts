@@ -58,6 +58,23 @@ export const theme = ref('light');
 export const currentApp = ref('');
 export const windowState = ref<WindowState>('open');
 
+/** The layout swaps to the phone branch under this width. */
+export const MOBILE_BREAKPOINT = 768;
+export const isMobile = ref(false);
+
+/**
+ * Wire the viewport listener. Module-level because matchMedia would break
+ * SSR — call it from onMount in the layout.
+ */
+export function initDeviceDetection() {
+	const query = window.matchMedia(`(min-width: ${MOBILE_BREAKPOINT}px)`);
+	const apply = () => {
+		isMobile.value = !query.matches;
+	};
+	apply();
+	query.addEventListener('change', apply);
+}
+
 /** Open an app by name: sets state and keeps the URL a deep link. */
 export function openApp(name: string) {
 	currentApp.value = name;
