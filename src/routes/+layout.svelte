@@ -16,6 +16,7 @@
 	import Settings from '@components/apps/settings.svelte';
 	import Skills from '@components/apps/skills.svelte';
 	import Contact from '@components/apps/contact.svelte';
+	import Terminal from '@components/apps/terminal.svelte';
 	import Window from '@components/window.svelte';
 
 	const title = 'ProDeh — Full Stack Developer';
@@ -28,7 +29,8 @@
 		Projects: Projects,
 		Settings: Settings,
 		Skills: Skills,
-		Contact: Contact
+		Contact: Contact,
+		Terminal: Terminal
 	};
 	let App = $derived(appComponents[currentApp.value]);
 	let bgStyle = $derived(
