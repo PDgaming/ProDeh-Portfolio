@@ -3,8 +3,12 @@
 	import { page } from '$app/stores';
 	import {
 		theme,
-		currentApp,
-		windowState,
+		windows,
+		windowOrder,
+		focusedApp,
+		openWindow,
+		closeWindow,
+		closeApp,
 		currentBackgroundImage,
 		backgroundImages,
 		appsList,
@@ -35,7 +39,6 @@
 		Contact: Contact,
 		Terminal: Terminal
 	};
-	let App = $derived(appComponents[currentApp.value]);
 	let bgStyle = $derived(
 		`background-image: url(${
 			backgroundImages.value.find((b) => b.name.startsWith(currentBackgroundImage.value))?.src
@@ -70,7 +73,7 @@
 			}
 		}
 
-		// URL decides which window is open; localStorage is no longer consulted.
+		// URL drives the FOCUSED window only; background windows just exist.
 		// Unknown paths leave the state alone — +error.svelte handles those views.
 		// State writes are untracked: this effect must re-run ONLY when the URL
 		// changes. (Before, reading currentApp here made any set from an app
@@ -81,17 +84,33 @@
 			const name = appsList.value.find((app) => `/${app.route}` === path)?.name;
 			untrack(() => {
 				if (path === '/') {
-					// Bare URL — nothing open (applies to the initial load and to
-					// the browser's back button).
-					currentApp.value = '';
-					windowState.value = 'open';
+					// Bare URL — the browser just left a deep link (initial load
+					// or back button): close the window that URL belonged to,
+					// i.e. the focused one. Background windows survive.
+					const app = focusedApp();
+					if (app) closeWindow(app);
 				} else if (name) {
-					currentApp.value = name;
-					windowState.value = 'open';
+					openWindow(name);
 				}
 			});
 		});
 	});
+
+	// One Escape listener for all windows (moved out of the per-window
+	// component in phase 12): closes the FOCUSED window only. Inputs keep
+	// Escape for themselves (the terminal app owns it).
+	function onKeydown(e: KeyboardEvent) {
+		if (e.key !== 'Escape') return;
+		const target = e.target as HTMLElement | null;
+		if (
+			target &&
+			(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+		) {
+			return;
+		}
+		const app = focusedApp();
+		if (app) closeApp(app);
+	}
 </script>
 
 <svelte:head>
@@ -115,6 +134,8 @@
 	{/if}
 </svelte:head>
 
+<svelte:window onkeydown={onKeydown} />
+
 <div class="main-content border-base-300 flex h-screen w-screen flex-col overflow-hidden">
 	{#if isMobile.value}
 		<Phone />
@@ -127,11 +148,18 @@
 			<div class="desktop">
 				<Desktop />
 			</div>
-			{#if currentApp.value && windowState.value !== 'minimized'}
-				<Window>
-					<App />
-				</Window>
-			{/if}
+			<!-- One window per open app, rendered in `windowOrder` so DOM order
+			     stacks them by focus: the last entry paints on top. -->
+			{#each windowOrder.value as appName (appName)}
+				{#if windows.value[appName] && windows.value[appName] !== 'minimized'}
+					{@const AppComp = appComponents[appName]}
+					{#if AppComp}
+						<Window {appName}>
+							<AppComp />
+						</Window>
+					{/if}
+				{/if}
+			{/each}
 			<!-- App route pages exist only to make the URLs real; the layout above -->
 			<!-- opens the window from the pathname. -->
 			{@render children()}

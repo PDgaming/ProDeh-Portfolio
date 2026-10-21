@@ -5,6 +5,8 @@ import backgroundImage4 from '../../assets/images/background_image4.webp';
 import backgroundImage5 from '../../assets/images/background_image5.webp';
 import { ref } from './helper.svelte';
 import { goto } from '$app/navigation';
+import { page } from '$app/stores';
+import { get } from 'svelte/store';
 
 export type WindowState = 'open' | 'minimized' | 'maximized';
 
@@ -55,8 +57,115 @@ export const appsList = ref([
 	}
 ]);
 export const theme = ref('light');
-export const currentApp = ref('');
-export const windowState = ref<WindowState>('open');
+
+/**
+ * Multi-window model (phase 12): one window per app, so the record key's
+ * presence is "open" and its absence is "closed". `windowOrder` is
+ * append-on-open/raise; the last open, non-minimized entry is the FOCUSED
+ * (topmost) window and layout renders windows in this order so DOM stacking
+ * follows focus. Windows deliberately do NOT survive a reload — a fresh visit
+ * starts with the bare desktop.
+ */
+export const windows = ref<Record<string, WindowState>>({});
+export const windowOrder = ref<string[]>([]);
+
+/** The focused app: last open, non-minimized entry of `windowOrder` ('' if none). */
+export function focusedApp(): string {
+	const order = windowOrder.value;
+	for (let i = order.length - 1; i >= 0; i--) {
+		const name = order[i];
+		const state = windows.value[name];
+		if (state && state !== 'minimized') return name;
+	}
+	return '';
+}
+
+/** Per-window state; closed (missing) slots read as `open` for rendering. */
+export function windowStateOf(name: string): WindowState {
+	return windows.value[name] ?? 'open';
+}
+
+/**
+ * Phase-12 compatibility shims: they read/write the FOCUSED window so
+ * titleBar/window/navbar keep compiling with the single-window API. Phase 13
+ * repoints every consumer at its window's own app and removes these.
+ */
+export const currentApp = {
+	get value() {
+		return focusedApp();
+	}
+};
+export const windowState = {
+	get value(): WindowState {
+		const app = focusedApp();
+		return app ? windowStateOf(app) : 'open';
+	},
+	set value(state: WindowState) {
+		const app = focusedApp();
+		if (app) windows.value = { ...windows.value, [app]: state };
+	}
+};
+
+/**
+ * Raise an app to the front. Closed (missing) and minimized slots become
+ * `open`; an already-open or maximized window keeps its state on raise.
+ */
+export function openWindow(appName: string) {
+	if (!appsList.value.some((app) => app.name === appName)) return;
+	const previous = windows.value[appName];
+	// Reorder first (raise), then restore the slot's state.
+	windowOrder.value = [...windowOrder.value.filter((name) => name !== appName), appName];
+	windows.value = {
+		...windows.value,
+		[appName]: !previous || previous === 'minimized' ? 'open' : previous
+	};
+}
+
+/** Close exactly one window; the next topmost open window becomes focused. */
+export function closeWindow(appName: string) {
+	if (!(appName in windows.value)) return;
+	const next = { ...windows.value };
+	delete next[appName];
+	windows.value = next;
+	windowOrder.value = windowOrder.value.filter((name) => name !== appName);
+}
+
+/** Fold a window into the taskbar; the focus line-up moves on without it. */
+export function minimizeWindow(appName: string) {
+	if (!(appName in windows.value)) return;
+	windows.value = { ...windows.value, [appName]: 'minimized' };
+}
+
+/**
+ * Open an app by name: raise/restore the window and make the URL its deep
+ * link. The goto is skipped when the URL already shows this app — an
+ * identical navigation would just push a duplicate history entry.
+ */
+export function openApp(name: string) {
+	openWindow(name);
+	const route = appsList.value.find((app) => app.name === name)?.route;
+	if (route && get(page).url.pathname !== `/${route}`) {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal deep link; resolve()'s route typing doesn't cover these dynamic app routes yet
+		goto(`/${route}`);
+	}
+}
+
+/**
+ * Close a window; navigate home only when the URL actually pointed at that
+ * app (closing a background window must not touch the URL). Called without
+ * an argument from legacy single-window callers, it closes the focused
+ * window — that shim dies in phase 13.
+ */
+export function closeApp(appName?: string) {
+	const target = appName ?? focusedApp();
+	if (!target) return;
+	const route = appsList.value.find((app) => app.name === target)?.route;
+	closeWindow(target);
+	if (route && get(page).url.pathname === `/${route}`) {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal navigation to the bare desktop
+		goto('/');
+	}
+}
 
 /** The layout swaps to the phone branch under this width. */
 export const MOBILE_BREAKPOINT = 768;
@@ -75,24 +184,7 @@ export function initDeviceDetection() {
 	query.addEventListener('change', apply);
 }
 
-/** Open an app by name: sets state and keeps the URL a deep link. */
-export function openApp(name: string) {
-	currentApp.value = name;
-	windowState.value = 'open';
-	const route = appsList.value.find((app) => app.name === name)?.route;
-	if (route) {
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal deep link; resolve()'s route typing doesn't cover these dynamic app routes yet
-		goto(`/${route}`);
-	}
-}
-
-/** Close the window and return the URL to the bare desktop. */
-export function closeApp() {
-	currentApp.value = '';
-	windowState.value = 'open';
-	// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal navigation to the bare desktop
-	goto('/');
-}
+// Multi-window helpers above replaced the old openApp/closeApp.
 // Screen-reader friendly reuse list for contact surfaces (contact app, terminal
 // `contact` command later). TODO(ProDeh): replace the placeholders once you have
 // a real email/LinkedIn — a wrong mailto bounces silently, so not shipped yet.
