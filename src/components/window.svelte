@@ -105,14 +105,13 @@
 		requestClose();
 	}
 
-	// Clicking a background window raises it, like a real window manager does.
-	// Already-focused windows no-op (openApp skips an identical navigation).
-	// Clicks originating in the title bar are EXCLUDED: the min/max/close
-	// buttons act first in their own handlers, and re-raising in the bubble
-	// phase would resurrect a window that was just closed (that was the
-	// double-click-to-close bug).
+	// Clicking a background window (title bar or body) raises it, like a real
+	// window manager does. Already-focused windows no-op (openApp skips an
+	// identical navigation). Clicks on the min/max/close BUTTONS are excluded:
+	// those handlers act first, and re-raising in the bubble phase would
+	// resurrect a window that was just closed (the double-click-to-close bug).
 	function onWindowClick(e: MouseEvent) {
-		if (e.target instanceof Element && e.target.closest('.title-bar')) return;
+		if (e.target instanceof Element && e.target.closest('.control-window')) return;
 		if (!isFocused) openApp(appName);
 	}
 </script>
