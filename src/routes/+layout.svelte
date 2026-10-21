@@ -7,10 +7,9 @@
 		windowState,
 		currentBackgroundImage,
 		backgroundImages,
-		appsList,
-		closeApp
+		appsList
 	} from '$lib/store/store.svelte';
-	import { onMount, type Component } from 'svelte';
+	import { onMount, untrack, type Component } from 'svelte';
 	import Desktop from '@components/Desktop.svelte';
 	import AboutMe from '@components/apps/aboutMe.svelte';
 	import Projects from '@components/apps/projects.svelte';
@@ -65,14 +64,24 @@
 
 		// URL decides which window is open; localStorage is no longer consulted.
 		// Unknown paths leave the state alone — +error.svelte handles those views.
+		// State writes are untracked: this effect must re-run ONLY when the URL
+		// changes. (Before, reading currentApp here made any set from an app
+		// click re-run the effect while the URL was still '/' — closeApp then
+		// cancelled the in-flight deep-link navigation, so clicks did nothing.)
 		$effect(() => {
 			const path = $page.url.pathname;
-			if (path === '/') {
-				if (currentApp.value) closeApp();
-			} else {
-				const match = appsList.value.find((app) => `/${app.route}` === path);
-				if (match) currentApp.value = match.name;
-			}
+			const name = appsList.value.find((app) => `/${app.route}` === path)?.name;
+			untrack(() => {
+				if (path === '/') {
+					// Bare URL — nothing open (applies to the initial load and to
+					// the browser's back button).
+					currentApp.value = '';
+					windowState.value = 'open';
+				} else if (name) {
+					currentApp.value = name;
+					windowState.value = 'open';
+				}
+			});
 		});
 	});
 </script>
