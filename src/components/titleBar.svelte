@@ -1,20 +1,28 @@
 <script lang="ts">
-	import { appsList, currentApp, windowState, closeApp } from '$lib/store/store.svelte';
+	import {
+		appsList,
+		windowStateOf,
+		minimizeWindow,
+		toggleMaximize,
+		closeApp
+	} from '$lib/store/store.svelte';
 
-	let app = $derived(appsList.value.find((app) => app.name === currentApp.value));
+	// Phase 13: the title bar belongs to ONE window — it renders that
+	// window's app chrome and its buttons act on that app, never on whatever
+	// happens to be topmost.
+	let { appName } = $props();
+
+	let app = $derived(appsList.value.find((app) => app.name === appName));
+	let appState = $derived(windowStateOf(appName));
 	let icon = $derived(app?.svg ?? '');
 </script>
 
-<div
-	class="title-bar bg-base-200 border-base-300 top-0 z-50 flex w-full cursor-move flex-row border-b"
-	id="window"
->
+<div class="title-bar liquid-glass top-0 z-50 flex w-full cursor-move flex-row" id="window">
 	<div class="content flex items-center gap-2.5 px-3 py-1.5">
 		{#if app}
 			<div
 				class="icon flex h-7 w-7 items-center justify-center rounded-md"
 				style="color: {app.iconColor}; background-color: color-mix(in oklab, {app.iconColor} 18%, transparent)"
-				aria-hidden="true"
 			>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
 				{@html icon}
@@ -22,7 +30,7 @@
 		{/if}
 		<div class="title">
 			<h1 class="font-display text-xl tracking-tight">
-				{currentApp.value}
+				{appName}
 			</h1>
 		</div>
 	</div>
@@ -31,9 +39,7 @@
 			class="minimize-window flex h-10 w-10 items-center justify-center text-base-content/60 hover:bg-base-200 hover:text-base-content"
 			aria-label="Minimize Window"
 			title="Minimize Window"
-			onclick={() => {
-				windowState.value = 'minimized';
-			}}
+			onclick={() => minimizeWindow(appName)}
 		>
 			<svg
 				width="30px"
@@ -50,13 +56,11 @@
 		</button>
 		<button
 			class="maximize-window flex h-10 w-10 items-center justify-center text-base-content/60 hover:bg-base-200 hover:text-base-content"
-			aria-label={windowState.value === 'maximized' ? 'Restore Window' : 'Maximize Window'}
-			title={windowState.value === 'maximized' ? 'Restore Window' : 'Maximize Window'}
-			onclick={() => {
-				windowState.value = windowState.value === 'maximized' ? 'open' : 'maximized';
-			}}
+			aria-label={appState === 'maximized' ? 'Restore Window' : 'Maximize Window'}
+			title={appState === 'maximized' ? 'Restore Window' : 'Maximize Window'}
+			onclick={() => toggleMaximize(appName)}
 		>
-			{#if windowState.value === 'maximized'}
+			{#if appState === 'maximized'}
 				<!-- restore: two overlapping windows -->
 				<svg
 					width="30px"
@@ -89,7 +93,7 @@
 			class="close-window flex h-10 w-10 items-center justify-center text-base-content/60 hover:bg-error hover:text-error-content"
 			aria-label="Close Window"
 			title="Close Window"
-			onclick={() => closeApp()}
+			onclick={() => closeApp(appName)}
 		>
 			<svg
 				width="30px"

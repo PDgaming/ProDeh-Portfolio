@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { appsList, currentApp, windowState, openApp, closeApp } from '$lib/store/store.svelte';
+	import { appsList, windows, focusedApp, openApp, closeApp } from '$lib/store/store.svelte';
 	import { onMount } from 'svelte';
 
-	function onTaskbarAppClick(name: string) {
-		// Clicking a running app's taskbar icon closes it; otherwise open/restore.
-		if (currentApp.value === name && windowState.value !== 'minimized') {
-			closeApp();
+	function onTaskbarAppClick(name: string, state: string) {
+		// Clicking the FOCUSED window's taskbar button closes it; a minimized
+		// or background window is raised/restored (openApp both).
+		if (focusedApp() === name && state !== 'minimized') {
+			closeApp(name);
 		} else {
 			openApp(name);
 		}
@@ -42,19 +43,22 @@
 </script>
 
 <div
-	class="task-bar absolute right-0 bottom-0 left-0 z-100 flex h-12 w-full items-center justify-center gap-3 overflow-hidden p-1"
+	class="task-bar liquid-glass absolute right-0 bottom-0 left-0 z-100 flex h-12 w-full items-center justify-center gap-3 overflow-hidden p-1"
 >
 	<div class="apps flex gap-3">
 		<button
 			class="app"
 			title="Home"
 			onclick={() => {
-				closeApp();
+				// Home closes the FOCUSED window (URL follows it to '/'); the
+				// other windows stay put.
+				const app = focusedApp();
+				if (app) closeApp(app);
 			}}
 			aria-label="Home"
 		>
 			<div
-				class="flex h-full w-10 items-center justify-center rounded-md bg-base-100 text-base-content"
+				class="liquid-glass flex h-full w-10 items-center justify-center rounded-lg text-base-content"
 				aria-hidden="true"
 			>
 				<svg
@@ -72,22 +76,33 @@
 			</div>
 		</button>
 		{#each appsList.value as app (app.name)}
-			<button
-				class="app flex h-10 w-10 items-center justify-center rounded-md"
-				class:taskbar-open={currentApp.value === app.name && windowState.value !== 'minimized'}
-				class:taskbar-minimized={currentApp.value === app.name && windowState.value === 'minimized'}
-				title={app.name}
-				onclick={() => {
-					onTaskbarAppClick(app.name);
-				}}
-				aria-label={app.name}
-				style="background-color: {app.iconColor}"
-			>
-				<div class="flex items-center justify-center" aria-hidden="true">
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
-					{@html app.svg}
-				</div>
-			</button>
+			{@const state = windows.value[app.name]}
+			{#if state}
+				{@const focused = focusedApp() === app.name && state !== 'minimized'}
+				<!-- Taskbar tracks OPEN windows only: focused = prominent, merely
+				     open = subtle, minimized = dimmed (needs restoring). Closed
+				     apps are skipped — the desktop strip launches them. -->
+				<button
+					class="app flex h-10 w-10 items-center justify-center rounded-md"
+					class:taskbar-focused={focused}
+					class:taskbar-open={state !== 'minimized' && !focused}
+					class:taskbar-minimized={state === 'minimized'}
+					title={app.name}
+					onclick={() => {
+						onTaskbarAppClick(app.name, state);
+					}}
+					aria-label="{app.name} window"
+				>
+					<div
+						class="flex items-center justify-center"
+						aria-hidden="true"
+						style="background-color: {app.iconColor}"
+					>
+						<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
+						{@html app.svg}
+					</div>
+				</button>
+			{/if}
 		{/each}
 	</div>
 	<div class="system-tray absolute right-0 p-4">
@@ -103,10 +118,7 @@
 </div>
 
 <style>
-	.task-bar {
-		background-color: var(--base-300);
-		backdrop-filter: blur(10px);
-	}
-	/* Icon hover/spring lives in layout.css (.app) — shared with the desktop
-	 * strip so both shells move the same way. */
+	/* Task bar surface is the shared .liquid-glass pane from layout.css; the
+	 * icon hover/spring lives there too (.app) so both shells move the same
+	 * way. */
 </style>

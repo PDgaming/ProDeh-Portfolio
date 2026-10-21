@@ -61,7 +61,7 @@
 >
 	<div class="window-inner" class:closing>
 		<div class="title-bar w-full">
-			<TitleBar />
+			<TitleBar {appName} />
 		</div>
 		<div class="window-content h-full w-full">
 			{@render children()}

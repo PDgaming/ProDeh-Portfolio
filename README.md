@@ -37,9 +37,11 @@ bun run format     # prettier --write
 ## How it hangs together
 
 - **Window state** lives in `src/lib/store/store.svelte.ts` as Svelte 5 runes:
-  `currentApp` (which window is open), `windowState`
-  (open/minimized/maximized), theme and wallpaper. `openApp()`/`closeApp()`
-  keep that state in sync with the URL.
+  `windows` (one window per app: open/minimized/maximized), `windowOrder`
+  (raise order — the last open entry is the focused, topmost window), theme
+  and wallpaper. Several windows can be open at once; the URL tracks only
+  the focused one. `openApp()`/`closeApp()` keep that state in sync with the
+  URL.
 - **Apps** are plain Svelte components in `src/components/apps/` rendered
   inside a single draggable `Window`. They are mapped from the URL by the
   layout, so adding an app means: a component, an entry in `appsList`

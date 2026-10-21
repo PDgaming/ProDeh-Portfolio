@@ -85,26 +85,14 @@ export function windowStateOf(name: string): WindowState {
 	return windows.value[name] ?? 'open';
 }
 
-/**
- * Phase-12 compatibility shims: they read/write the FOCUSED window so
- * titleBar/window/navbar keep compiling with the single-window API. Phase 13
- * repoints every consumer at its window's own app and removes these.
- */
-export const currentApp = {
-	get value() {
-		return focusedApp();
-	}
-};
-export const windowState = {
-	get value(): WindowState {
-		const app = focusedApp();
-		return app ? windowStateOf(app) : 'open';
-	},
-	set value(state: WindowState) {
-		const app = focusedApp();
-		if (app) windows.value = { ...windows.value, [app]: state };
-	}
-};
+/** Open ↕ maximized toggle for one window's title bar button. */
+export function toggleMaximize(appName: string) {
+	const current = windowStateOf(appName);
+	windows.value = {
+		...windows.value,
+		[appName]: current === 'maximized' ? 'open' : 'maximized'
+	};
+}
 
 /**
  * Raise an app to the front. Closed (missing) and minimized slots become
@@ -152,15 +140,12 @@ export function openApp(name: string) {
 
 /**
  * Close a window; navigate home only when the URL actually pointed at that
- * app (closing a background window must not touch the URL). Called without
- * an argument from legacy single-window callers, it closes the focused
- * window — that shim dies in phase 13.
+ * app (closing a background window must not touch the URL).
  */
-export function closeApp(appName?: string) {
-	const target = appName ?? focusedApp();
-	if (!target) return;
-	const route = appsList.value.find((app) => app.name === target)?.route;
-	closeWindow(target);
+export function closeApp(appName: string) {
+	if (!appName) return;
+	const route = appsList.value.find((app) => app.name === appName)?.route;
+	closeWindow(appName);
 	if (route && get(page).url.pathname === `/${route}`) {
 		// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal navigation to the bare desktop
 		goto('/');
