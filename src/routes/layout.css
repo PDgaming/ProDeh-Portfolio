@@ -144,8 +144,8 @@
  * light and dark panes come from the same recipe. */
 .liquid-glass {
 	background-color: var(--color-glass);
-	-webkit-backdrop-filter: blur(18px) saturate(160%);
-	backdrop-filter: blur(18px) saturate(160%);
+	-webkit-backdrop-filter: blur(24px) saturate(180%);
+	backdrop-filter: blur(24px) saturate(180%);
 	box-shadow:
 		inset 0 1px 0 0 var(--color-glass-highlight),
 		inset 0 -1px 0 0 var(--color-glass-edge);
@@ -173,13 +173,12 @@
 	width: 60%;
 	top: 8%;
 	left: 21%;
-	/* Slightly translucent pane so the glass title bar has something real to
-	 * see through: the desktop (or windows behind it) reads through the
-	 * frosted header strip, macOS-style. App content never sits on glass —
-	 * every app paints its own solid bg-base-100 over the content area. */
-	background-color: color-mix(in oklab, var(--color-base-100) 80%, transparent);
-	-webkit-backdrop-filter: blur(20px) saturate(140%);
-	backdrop-filter: blur(20px) saturate(140%);
+	/* The pane itself paints nothing: every app fills its own content area
+	 * with a solid bg-base-100, so the only place the desktop should show
+	 * through is the title-bar strip — and the strip's .liquid-glass blur
+	 * handles that directly. A translucent window body here would just
+	 * double-tint the strip into invisibility. */
+	background-color: transparent;
 	border: 1px solid color-mix(in oklab, var(--color-base-content) 18%, transparent);
 	border-radius: var(--radius-box);
 	overflow: hidden;
@@ -305,10 +304,12 @@
 	outline-offset: 2px;
 }
 
-/* Wallpaper layers + scrim. The top layer fades in over the outgoing one;
- * the scrim is theme-aware without any per-theme overrides — mixes
- * base-100 so ink-paper themes get a light veil and the smoke theme a
- * dark one, always strengthening toward the taskbar edge. */
+/* Wallpaper layers + scrim. The top layer fades in over the outgoing one,
+ * arriving with a settling zoom while the outgoing one recedes wider
+ * underneath (both layers stay fully opaque — a fading leave would expose
+ * the desktop mid-fade). The scrim is theme-aware without any per-theme
+ * overrides — mixes base-100 so ink-paper themes get a light veil and the
+ * smoke theme a dark one, always strengthening toward the taskbar edge. */
 .wallpaper-layer {
 	background-size: cover;
 	background-repeat: no-repeat;
@@ -319,6 +320,17 @@
 @keyframes wallpaper-fade {
 	from {
 		opacity: 0;
+		transform: scale(1.045);
+	}
+}
+/* The leaving layer lingers under the incoming fade (650ms of bookkeeping
+ * in +layout.svelte); the slow drift adds depth to the crossfade. */
+.wallpaper-leave {
+	animation: wallpaper-recede 650ms ease-out both;
+}
+@keyframes wallpaper-recede {
+	to {
+		transform: scale(1.035);
 	}
 }
 .wallpaper-scrim {
@@ -331,7 +343,37 @@
 	);
 }
 @media (prefers-reduced-motion: reduce) {
-	.wallpaper-enter {
+	.wallpaper-enter,
+	.wallpaper-leave {
+		animation: none;
+	}
+}
+
+/* Theme change reveal (View Transitions API). setTheme() in the store
+ * snapshots the page, then the new theme is revealed as a circle growing
+ * from the control that flipped it — the --vt-origin-* vars are set on
+ * :root and inherited into the transition's pseudo-tree. The default
+ * crossfade/slide animations are disabled so the clip is the only motion;
+ * browsers without startViewTransition never reach the gesture at all. */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+	animation: theme-reveal 450ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes theme-reveal {
+	from {
+		clip-path: circle(0% at var(--vt-origin-x, 95%) var(--vt-origin-y, 95%));
+	}
+	to {
+		clip-path: circle(150% at var(--vt-origin-x, 95%) var(--vt-origin-y, 95%));
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-old(root),
+	::view-transition-new(root) {
 		animation: none;
 	}
 }

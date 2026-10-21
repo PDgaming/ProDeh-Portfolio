@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { theme, currentBackgroundImage, backgroundImages } from '$lib/store/store.svelte';
+	import { setTheme, currentBackgroundImage, backgroundImages } from '$lib/store/store.svelte';
 	import { onMount } from 'svelte';
 
 	// Read localStorage only in onMount so this component stays SSR-safe.
@@ -9,10 +9,12 @@
 		selectedTheme = localStorage.getItem('Theme') === 'business' ? 'business' : 'light';
 	});
 
-	function onThemeToggle() {
+	function onThemeToggle(e: Event) {
 		selectedTheme = selectedTheme === 'business' ? 'light' : 'business';
-		theme.value = selectedTheme;
 		localStorage.setItem('Theme', selectedTheme);
+		// The theme reveal blooms from the control that triggered it.
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		setTheme(selectedTheme, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
 	}
 </script>
 
@@ -21,10 +23,14 @@
 		<h2 class="font-display text-xl">Theme</h2>
 		<label class="flex cursor-pointer gap-2">
 			<span class="label-text">Corporate</span>
+			<!-- No `theme-controller` class on purpose: daisyUI's :has() wiring
+			     repaints the page before the theme-reveal snapshot would capture
+			     the old state, which would erase the animation. Theming is owned
+			     by the store's data-theme effect; this input only reports state. -->
 			<input
 				type="checkbox"
 				value="business"
-				class="theme-controller toggle"
+				class="toggle"
 				checked={selectedTheme === 'business'}
 				onchange={onThemeToggle}
 			/>

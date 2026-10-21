@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { draggable, type DragEventData } from '@neodrag/svelte';
 	import TitleBar from './titleBar.svelte';
-	import { windowStateOf, closeApp, openApp, focusedApp } from '$lib/store/store.svelte';
+	import {
+		windowStateOf,
+		closeApp,
+		openApp,
+		focusedApp,
+		closingApps
+	} from '$lib/store/store.svelte';
 
 	// One window instance per component (phase 12): the layout renders this
 	// once per entry of `windowOrder`, passing the app it belongs to.
@@ -77,22 +83,17 @@
 		window.addEventListener('pointerup', onUp);
 	}
 
-	// Close plays an exit animation first (window-close keyframe in
-	// layout.css); the store-driven close (taskbar tap) stays instant. When
-	// the store file is free of terminal-churn, add an onClosing hook there so
-	// every close path can animate.
-	let closing = $state(false);
-
-	function requestClose() {
-		if (closing) return;
-		closing = true;
-		// 140ms — matches the window-close keyframe duration.
-		setTimeout(() => closeApp(appName), 140);
-	}
+	// Close is animated at the STORE level (closeApp → closingApps): every
+	// path — taskbar tap, Home, Escape, title bar X, back button — funnels
+	// through the same fold, so no per-instance timer is needed here. This
+	// component only mirrors the flag into the `.closing` class; when the
+	// store forgets the window, it unmounts.
+	let closing = $derived(closingApps.has(appName));
 
 	// Escape closes the FOCUSED window only — every instance listens, but all
 	// but the focused one ignore the key. Inputs keep Escape for themselves
-	// (the terminal app owns it).
+	// (the terminal app owns it). Double-fires while the fold runs are
+	// no-ops in the store.
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key !== 'Escape' || !isFocused) return;
 		const target = e.target as HTMLElement | null;
@@ -102,7 +103,7 @@
 		) {
 			return;
 		}
-		requestClose();
+		closeApp(appName);
 	}
 
 	// Clicking a background window (title bar or body) raises it, like a real

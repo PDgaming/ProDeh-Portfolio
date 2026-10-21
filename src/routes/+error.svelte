@@ -17,7 +17,7 @@
 
 <div class="pointer-events-none fixed inset-0 flex items-center justify-center">
 	<div class="pointer-events-auto card bg-base-100 w-96 border border-base-300 shadow-xl">
-		<div class="title-bar bg-base-300 flex h-10 w-full cursor-default items-center px-2">
+		<div class="title-bar liquid-glass flex h-10 w-full cursor-default items-center px-2">
 			<h1 class="text-sm">system-error.log</h1>
 		</div>
 		<div class="card-body gap-3">
