@@ -40,6 +40,9 @@
 		"wrangler": "^4.97.0"
 	},
 	"dependencies": {
+		"@fontsource-variable/bricolage-grotesque": "^5.3.0",
+		"@fontsource-variable/jetbrains-mono": "^5.3.0",
+		"@fontsource-variable/onest": "^5.3.1",
 		"@neodrag/svelte": "^2.3.3"
 	}
 }

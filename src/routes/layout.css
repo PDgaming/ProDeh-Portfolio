@@ -1,8 +1,102 @@
 @import 'tailwindcss';
+
+/* ── Tokens ──────────────────────────────────────────────────────────────
+   Fonts (self-hosted via @fontsource; no third-party request at runtime):
+   display = Bricolage Grotesque (window titles, headings)
+   sans    = Onest            (body — Tailwind default face via --font-sans)
+   mono    = JetBrains Mono   (clock, labels, terminal-adjacent surfaces)
+   Consumers: Tailwind utilities `font-sans` / `font-display` / `font-mono`.
+   Color palette is defined per-theme in the daisyUI blocks below; components
+   should stick to semantic tokens (base-*, primary, …) so both themes work. */
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/onest';
+@import '@fontsource-variable/jetbrains-mono';
+
+@theme {
+	--font-sans: 'Onest Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-display: 'Bricolage Grotesque Variable', 'Onest Variable', ui-sans-serif, sans-serif;
+	--font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', monospace;
+}
+
 @plugin 'daisyui' {
 	themes:
 		light --default,
 		business --prefersdark;
+}
+
+/* Cozy dev-machine palette. Warm paper surfaces, ink text, one orange accent
+   (derived from the About avatar). `business` keeps the same hues on a warm
+   charcoal dark mode instead of stock corporate blue. Hues live in oklch. */
+@plugin 'daisyui/theme' {
+	name: 'light';
+	color-scheme: light;
+
+	--color-base-100: oklch(97% 0.018 90);
+	--color-base-200: oklch(93.5% 0.024 88);
+	--color-base-300: oklch(89% 0.03 85);
+	--color-base-content: oklch(29% 0.045 55);
+
+	--color-primary: oklch(65% 0.17 45);
+	--color-primary-content: oklch(98% 0.015 90);
+	--color-secondary: oklch(52% 0.06 60);
+	--color-secondary-content: oklch(97% 0.02 90);
+	--color-accent: oklch(66% 0.09 165);
+	--color-accent-content: oklch(24% 0.035 165);
+
+	--color-neutral: oklch(38% 0.03 60);
+	--color-neutral-content: oklch(94% 0.018 90);
+
+	--color-info: oklch(62% 0.1 240);
+	--color-info-content: oklch(98% 0.01 240);
+	--color-success: oklch(62% 0.13 150);
+	--color-success-content: oklch(98% 0.01 150);
+	--color-warning: oklch(75% 0.14 80);
+	--color-warning-content: oklch(27% 0.04 80);
+	--color-error: oklch(58% 0.19 25);
+	--color-error-content: oklch(98% 0.012 25);
+
+	--radius-selector: 0.5rem;
+	--radius-field: 0.5rem;
+	--radius-box: 0.75rem;
+	--border: 1px;
+	--depth: 1;
+	--noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+	name: 'business';
+	color-scheme: dark;
+
+	--color-base-100: oklch(24% 0.022 55);
+	--color-base-200: oklch(21% 0.02 55);
+	--color-base-300: oklch(17.5% 0.018 55);
+	--color-base-content: oklch(91% 0.02 88);
+
+	--color-primary: oklch(72% 0.16 55);
+	--color-primary-content: oklch(22% 0.022 55);
+	--color-secondary: oklch(67% 0.05 70);
+	--color-secondary-content: oklch(22% 0.022 55);
+	--color-accent: oklch(72% 0.08 155);
+	--color-accent-content: oklch(22% 0.022 55);
+
+	--color-neutral: oklch(33% 0.02 55);
+	--color-neutral-content: oklch(90% 0.02 88);
+
+	--color-info: oklch(70% 0.1 240);
+	--color-info-content: oklch(22% 0.02 240);
+	--color-success: oklch(70% 0.13 150);
+	--color-success-content: oklch(22% 0.02 150);
+	--color-warning: oklch(80% 0.14 80);
+	--color-warning-content: oklch(27% 0.04 80);
+	--color-error: oklch(66% 0.18 25);
+	--color-error-content: oklch(98% 0.012 25);
+
+	--radius-selector: 0.5rem;
+	--radius-field: 0.5rem;
+	--radius-box: 0.75rem;
+	--border: 1px;
+	--depth: 1;
+	--noise: 0;
 }
 
 /* Active-app highlights: the desktop says where the window is. */
