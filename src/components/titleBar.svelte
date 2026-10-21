@@ -1,24 +1,33 @@
 <script lang="ts">
 	import { appsList, currentApp, windowState, closeApp } from '$lib/store/store.svelte';
 
-	let icon = $derived(appsList.value.find((app) => app.name === currentApp.value)?.svg ?? '');
+	let app = $derived(appsList.value.find((app) => app.name === currentApp.value));
+	let icon = $derived(app?.svg ?? '');
 </script>
 
-<div class="title-bar bg-base-300 top-0 z-50 flex h-auto w-full cursor-move flex-row" id="window">
-	<div class="content flex gap-2 p-1">
-		<div class="icon">
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
-			{@html icon}
-		</div>
+<div
+	class="title-bar bg-base-200 border-base-300 top-0 z-50 flex w-full cursor-move flex-row border-b"
+	id="window"
+>
+	<div class="content flex items-center gap-2.5 px-3 py-1.5">
+		{#if app}
+			<div
+				class="icon flex h-7 w-7 items-center justify-center rounded-md"
+				style="color: {app.iconColor}; background-color: color-mix(in oklab, {app.iconColor} 18%, transparent)"
+			>
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
+				{@html icon}
+			</div>
+		{/if}
 		<div class="title">
-			<h1 class="text-xl">
+			<h1 class="font-display text-xl tracking-tight">
 				{currentApp.value}
 			</h1>
 		</div>
 	</div>
-	<div class="control-window ml-auto flex h-10 items-center gap-5">
+	<div class="control-window ml-auto flex items-center">
 		<button
-			class="minimize-window flex h-full w-10 items-center justify-center text-base-content/60 hover:bg-base-200 hover:text-base-content"
+			class="minimize-window flex h-10 w-10 items-center justify-center text-base-content/60 hover:bg-base-200 hover:text-base-content"
 			aria-label="Minimize Window"
 			title="Minimize Window"
 			onclick={() => {
@@ -39,7 +48,7 @@
 			</svg>
 		</button>
 		<button
-			class="maximize-window flex h-full w-10 items-center justify-center text-base-content/60 hover:bg-base-200 hover:text-base-content"
+			class="maximize-window flex h-10 w-10 items-center justify-center text-base-content/60 hover:bg-base-200 hover:text-base-content"
 			aria-label={windowState.value === 'maximized' ? 'Restore Window' : 'Maximize Window'}
 			title={windowState.value === 'maximized' ? 'Restore Window' : 'Maximize Window'}
 			onclick={() => {
@@ -76,7 +85,7 @@
 			{/if}
 		</button>
 		<button
-			class="close-window flex h-full w-10 items-center justify-center text-base-content/60 hover:bg-error hover:text-error-content"
+			class="close-window flex h-10 w-10 items-center justify-center text-base-content/60 hover:bg-error hover:text-error-content"
 			aria-label="Close Window"
 			title="Close Window"
 			onclick={() => closeApp()}
@@ -96,3 +105,11 @@
 		</button>
 	</div>
 </div>
+
+<style>
+	/* Injected app SVGs bake in 30px; the chip wants a compact glyph. */
+	.icon :global(svg) {
+		width: 18px;
+		height: 18px;
+	}
+</style>

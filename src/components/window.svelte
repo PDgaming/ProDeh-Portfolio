@@ -5,10 +5,22 @@
 
 	let { children } = $props();
 
+	// Close plays an exit animation first (window-close keyframe in
+	// layout.css); the store-driven close (taskbar tap) stays instant. When
+	// the store file is free of terminal-churn, add an onClosing hook there so
+	// every close path can animate.
+	let closing = $state(false);
+
+	function requestClose() {
+		if (closing) return;
+		closing = true;
+		// 140ms — matches the window-close keyframe duration.
+		setTimeout(closeApp, 140);
+	}
+
 	function onKeydown(e: KeyboardEvent) {
 		if (e.key !== 'Escape') return;
-		// Don't hijack Escape inside text inputs (matters for the upcoming
-		// terminal app, where Escape belongs to the shell).
+		// Don't hijack Escape inside text inputs (the terminal app owns it).
 		const target = e.target as HTMLElement | null;
 		if (
 			target &&
@@ -16,7 +28,7 @@
 		) {
 			return;
 		}
-		closeApp();
+		requestClose();
 	}
 </script>
 
@@ -31,7 +43,7 @@
 		disabled: windowState.value === 'maximized'
 	}}
 >
-	<div class="w-full flex h-full flex-col items-center">
+	<div class="window-inner" class:closing>
 		<div class="title-bar w-full">
 			<TitleBar />
 		</div>
@@ -40,18 +52,3 @@
 		</div>
 	</div>
 </div>
-
-<style>
-	.window {
-		height: 70%;
-		width: 60%;
-		top: 8%;
-		left: 21%;
-	}
-	.window.maximized {
-		height: calc(100% - 3.5rem);
-		width: 100%;
-		top: 0;
-		left: 0;
-	}
-</style>
