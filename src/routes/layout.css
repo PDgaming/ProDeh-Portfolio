@@ -189,6 +189,31 @@
 	background: color-mix(in oklab, var(--color-base-content) 45%, transparent);
 }
 
+/* One orchestrated load-in for the desktop strip: icons rise and fade in
+ * sequence (per-icon delay set inline), once per paint. */
+@keyframes icon-rise {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+}
+.desktop-icon {
+	animation: icon-rise 320ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/* Placeholder for skills without a logo yet: a quiet dashed box with the
+ * monogram, honest about being a stand-in rather than faking a brand. */
+.icon-fallback {
+	border: 1px dashed color-mix(in oklab, var(--color-base-content) 30%, transparent);
+	background: color-mix(in oklab, var(--color-base-content) 6%, transparent);
+}
+
+/* Keyboard users get a shell-wide visible ring; pointer users don't. */
+:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
+}
+
 /* Shared shell icon interaction — used by the desktop strip and the taskbar
  * dock: slight overshoot on hover, tuck on press, static under
  * reduced motion. */
@@ -211,6 +236,9 @@
 	}
 	.window-inner,
 	.window-inner.closing {
+		animation: none;
+	}
+	.desktop-icon {
 		animation: none;
 	}
 }

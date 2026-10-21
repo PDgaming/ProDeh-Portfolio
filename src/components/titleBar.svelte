@@ -14,6 +14,7 @@
 			<div
 				class="icon flex h-7 w-7 items-center justify-center rounded-md"
 				style="color: {app.iconColor}; background-color: color-mix(in oklab, {app.iconColor} 18%, transparent)"
+				aria-hidden="true"
 			>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
 				{@html icon}

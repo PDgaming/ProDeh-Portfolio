@@ -55,6 +55,7 @@
 		>
 			<div
 				class="flex h-full w-10 items-center justify-center rounded-md bg-base-100 text-base-content"
+				aria-hidden="true"
 			>
 				<svg
 					width="30px"
@@ -82,8 +83,10 @@
 				aria-label={app.name}
 				style="background-color: {app.iconColor}"
 			>
-				<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
-				{@html app.svg}
+				<div class="flex items-center justify-center" aria-hidden="true">
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
+					{@html app.svg}
+				</div>
 			</button>
 		{/each}
 	</div>

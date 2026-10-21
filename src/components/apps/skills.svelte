@@ -11,7 +11,7 @@
 <div
 	class="skills app-scroll bg-base-100 flex h-full w-full flex-col items-center gap-3 px-3 pt-3 pb-8"
 >
-	<h1 class="text-3xl font-bold">My Skills</h1>
+	<h1 class="font-display text-3xl">My Skills</h1>
 
 	<div class="flex w-full max-w-6xl flex-wrap justify-center gap-6">
 		{#each categories as cat (cat.name)}
@@ -23,11 +23,19 @@
 							<div
 								class="skill-tile hover:bg-base-200/50 flex flex-col items-center gap-2 rounded-2xl p-2 transition-transform hover:scale-105"
 							>
-								<div class="flex h-16 w-16 items-center justify-center">
+								<div class="flex h-16 w-16 items-center justify-center" aria-hidden="true">
 									{#if item.svg}
+										<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the data module -->
 										{@html item.svg}
 									{:else}
-										<span class="text-sm opacity-40">—</span>
+										<!-- No logo data yet: a quiet monogram stand-in, not a fake brand mark. -->
+										<div
+											class="icon-fallback flex h-12 w-12 items-center justify-center rounded-lg"
+										>
+											<span class="font-mono text-sm opacity-60">
+												{item.name.slice(0, 2).toUpperCase()}
+											</span>
+										</div>
 									{/if}
 								</div>
 								<span class="badge badge-outline">{item.name}</span>
