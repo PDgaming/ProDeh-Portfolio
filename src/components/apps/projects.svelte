@@ -59,7 +59,8 @@
 		<div class="project-list flex flex-wrap justify-center gap-3 overflow-y-scroll">
 			<div class="card bg-base-300 h-45 w-80 shadow-sm">
 				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external URL -->
-				<a class="card-body" href={PINNED.url}>
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- external URL -->
+				<a class="card-body" href={PINNED.url} target="_blank" rel="noopener">
 					<h2 class="card-title">{PINNED.name}</h2>
 					<p>{PINNED.description}</p>
 				</a>

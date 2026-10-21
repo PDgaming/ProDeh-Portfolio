@@ -22,8 +22,10 @@
 			<div class="card-body">
 				<h3 class="card-title text-xl">Currently</h3>
 				<p>
-					Building <a class="link" href="https://github.com/pd-enterprise/">PD Enterprise</a>, a
-					suite of open-source software for students.
+					Building
+					<a class="link" href="https://github.com/pd-enterprise/" target="_blank" rel="noopener"
+						>PD Enterprise</a
+					>, a suite of open-source software for students.
 				</p>
 			</div>
 		</div>
