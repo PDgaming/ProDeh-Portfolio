@@ -4,6 +4,9 @@ import backgroundImage3 from '../../assets/images/background_image3.webp';
 import backgroundImage4 from '../../assets/images/background_image4.webp';
 import backgroundImage5 from '../../assets/images/background_image5.webp';
 import { ref } from './helper.svelte';
+import { goto } from '$app/navigation';
+
+export type WindowState = 'open' | 'minimized' | 'maximized';
 
 export const appsList = ref([
 	{
@@ -44,6 +47,26 @@ export const appsList = ref([
 ]);
 export const theme = ref('light');
 export const currentApp = ref('');
+export const windowState = ref<WindowState>('open');
+
+/** Open an app by name: sets state and keeps the URL a deep link. */
+export function openApp(name: string) {
+	currentApp.value = name;
+	windowState.value = 'open';
+	const route = appsList.value.find((app) => app.name === name)?.route;
+	if (route) {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal deep link; resolve()'s route typing doesn't cover these dynamic app routes yet
+		goto(`/${route}`);
+	}
+}
+
+/** Close the window and return the URL to the bare desktop. */
+export function closeApp() {
+	currentApp.value = '';
+	windowState.value = 'open';
+	// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal navigation to the bare desktop
+	goto('/');
+}
 // Screen-reader friendly reuse list for contact surfaces (contact app, terminal
 // `contact` command later). TODO(ProDeh): replace the placeholders once you have
 // a real email/LinkedIn — a wrong mailto bounces silently, so not shipped yet.

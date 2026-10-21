@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { currentApp, appsList } from '$lib/store/store.svelte';
+	import { appsList, currentApp, closeApp } from '$lib/store/store.svelte';
 
 	let icon = $derived(appsList.value.find((app) => app.name === currentApp.value)?.svg ?? '');
 </script>
@@ -7,6 +7,7 @@
 <div class="title-bar bg-base-300 top-0 z-50 flex h-auto w-full cursor-move flex-row" id="window">
 	<div class="content flex gap-2 p-1">
 		<div class="icon">
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
 			{@html icon}
 		</div>
 		<div class="title">
@@ -20,9 +21,7 @@
 			class="close-window flex h-full w-10 items-center justify-center hover:bg-red-600"
 			aria-label="Close Window"
 			title="Close Window"
-			onclick={() => {
-				currentApp.value = '';
-			}}
+			onclick={() => closeApp()}
 		>
 			<svg
 				width="30px"

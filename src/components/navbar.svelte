@@ -1,6 +1,15 @@
 <script lang="ts">
-	import { appsList, currentApp } from '$lib/store/store.svelte';
+	import { appsList, currentApp, windowState, openApp, closeApp } from '$lib/store/store.svelte';
 	import { onMount } from 'svelte';
+
+	function onTaskbarAppClick(name: string) {
+		// Clicking a running app's taskbar icon closes it; otherwise open/restore.
+		if (currentApp.value === name && windowState.value !== 'minimized') {
+			closeApp();
+		} else {
+			openApp(name);
+		}
+	}
 
 	let date = $state(new Date());
 	let dayOrNight = $derived(date.getHours() > 12 ? 'PM' : 'AM');
@@ -32,7 +41,7 @@
 			class="app"
 			title="Home"
 			onclick={() => {
-				currentApp.value = '';
+				closeApp();
 			}}
 			aria-label="Home"
 		>
@@ -54,13 +63,16 @@
 		{#each appsList.value as app (app.name)}
 			<button
 				class="app flex h-10 w-10 items-center justify-center rounded-md"
+				class:taskbar-open={currentApp.value === app.name && windowState.value !== 'minimized'}
+				class:taskbar-minimized={currentApp.value === app.name && windowState.value === 'minimized'}
 				title={app.name}
 				onclick={() => {
-					currentApp.value = app.name;
+					onTaskbarAppClick(app.name);
 				}}
 				aria-label={app.name}
 				style="background-color: {app.iconColor}"
 			>
+				<!-- eslint-disable-next-line svelte/no-at-html-tags -- first-party static SVG strings from the store -->
 				{@html app.svg}
 			</button>
 		{/each}
