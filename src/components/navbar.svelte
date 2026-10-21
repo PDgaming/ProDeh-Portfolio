@@ -104,10 +104,6 @@
 		background-color: var(--base-300);
 		backdrop-filter: blur(10px);
 	}
-	.app {
-		transition: transform 0.2s ease-in-out;
-	}
-	.app:hover {
-		transform: scale(1.1);
-	}
+	/* Icon hover/spring lives in layout.css (.app) — shared with the desktop
+	 * strip so both shells move the same way. */
 </style>
