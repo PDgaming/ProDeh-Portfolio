@@ -12,8 +12,6 @@
 	}
 
 	let date = $state(new Date());
-	let dayOrNight = $derived(date.getHours() > 12 ? 'PM' : 'AM');
-
 	let hour: number = $derived(date.getHours());
 	let minute = $derived(date.getMinutes());
 	let second = $derived(date.getSeconds());
@@ -21,6 +19,16 @@
 	let today = $derived(date.getDate());
 	let month = $derived(date.getMonth());
 	let year = $derived(date.getFullYear());
+
+	// Padded, no-jitter clock. `getHours() >= 12` fixes the noon→AM bug;
+	// `month + 1` fixes the showing of the zero-based index as a date.
+	let timeLine = $derived(
+		`${String(hour % 12 || 12).padStart(2, '0')}:${String(minute).padStart(2, '0')}:${String(second).padStart(2, '0')}`
+	);
+	let dayOrNight = $derived(hour >= 12 ? 'PM' : 'AM');
+	let dateLine = $derived(
+		`${String(today).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}/${year}`
+	);
 
 	onMount(() => {
 		const interval = setInterval(() => {
@@ -45,7 +53,9 @@
 			}}
 			aria-label="Home"
 		>
-			<div class="flex h-full w-10 items-center justify-center rounded-md bg-gray-200">
+			<div
+				class="flex h-full w-10 items-center justify-center rounded-md bg-base-100 text-base-content"
+			>
 				<svg
 					width="30px"
 					height="30px"
@@ -55,7 +65,7 @@
 				>
 					<path
 						d="M1 6V15H6V11C6 9.89543 6.89543 9 8 9C9.10457 9 10 9.89543 10 11V15H15V6L8 0L1 6Z"
-						fill="#000000"
+						fill="currentColor"
 					/>
 				</svg>
 			</div>
@@ -78,12 +88,12 @@
 		{/each}
 	</div>
 	<div class="system-tray absolute right-0 p-4">
-		<div class="clock flex flex-col items-center justify-center">
+		<div class="clock flex flex-col items-center justify-center font-mono text-xs tabular-nums">
 			<div class="time">
-				<p>{hour % 12 || 12}:{minute}:{second} {dayOrNight}</p>
+				<p>{timeLine} {dayOrNight}</p>
 			</div>
 			<div class="date">
-				<p>{today}/{month}/{year}</p>
+				<p>{dateLine}</p>
 			</div>
 		</div>
 	</div>

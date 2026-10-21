@@ -11,7 +11,7 @@
 	<div class="content flex flex-col gap-3">
 		<div class="title flex flex-col items-center">
 			<h2 class="text-3xl">ProDeh</h2>
-			<h3 class="text-1xl">Full Stack Developer</h3>
+			<h3 class="text-xl">Full Stack Developer</h3>
 		</div>
 		<div class="card bg-base-300 w-96 max-sm:w-full shadow-sm">
 			<div class="card-body">

@@ -5,6 +5,20 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+		<script>
+			// Pre-paint theme seed: mirrors layout.svelte's onMount logic and
+			// daisyUI's theme roles (light --default, business --prefersdark) so a
+			// returning dark-theme visitor never sees the stock light palette
+			// flash first. try/catch: storage can be blocked (privacy mode).
+			try {
+				var __theme = localStorage.getItem('Theme');
+				if (__theme === 'business' || __theme === 'light') {
+					document.documentElement.setAttribute('data-theme', __theme);
+				} else if (matchMedia('(prefers-color-scheme: dark)').matches) {
+					document.documentElement.setAttribute('data-theme', 'business');
+				}
+			} catch {}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
