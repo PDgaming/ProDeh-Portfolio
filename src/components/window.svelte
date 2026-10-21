@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { draggable } from '@neodrag/svelte';
+	import { draggable, type DragEventData } from '@neodrag/svelte';
 	import TitleBar from './titleBar.svelte';
 	import { windowStateOf, closeApp, openApp, focusedApp } from '$lib/store/store.svelte';
 
@@ -9,6 +9,73 @@
 
 	let appState = $derived(windowStateOf(appName));
 	let isFocused = $derived(focusedApp() === appName);
+
+	/**
+	 * Controlled drag position (neodrag `position`). New windows cascade: a
+	 * small random offset keeps consecutive windows from pixel-stacking.
+	 * (Offsets reset when a window unmounts — minimizing forgets position.)
+	 */
+	type Offset = { x: number; y: number };
+	function cascadeOffset(): Offset {
+		return { x: 16 + Math.random() * 104, y: Math.random() * 64 };
+	}
+	let position = $state<Offset>(cascadeOffset());
+
+	// Maximize must return the window to its DEFAULT position — a dragged
+	// offset would otherwise maximize at the wrong place. The pre-maximize
+	// offset comes back on restore.
+	let preMaximized = $state<Offset | null>(null);
+	$effect(() => {
+		if (appState === 'maximized') {
+			if (!preMaximized) preMaximized = { ...position };
+			position = { x: 0, y: 0 };
+		} else if (preMaximized) {
+			position = preMaximized;
+			preMaximized = null;
+		}
+	});
+
+	// neodrag is controlled here: dragging reports offsets and we store them,
+	// which is what lets maximize/restore own the position.
+	function onDrag(data: DragEventData) {
+		position = { x: data.offsetX, y: data.offsetY };
+	}
+
+	// Interactive resize via the bottom-right grip. `size` stays empty until
+	// the visitor resizes, so the CSS defaults govern; it is not applied while
+	// maximized (and survives a maximize/restore cycle).
+	const MIN_SIZE = { w: 280, h: 180 };
+	let size = $state<{ w?: number; h?: number }>({});
+	let windowEl = $state<HTMLDivElement | null>(null);
+
+	let windowSizeStyle = $derived.by(() => {
+		if (appState === 'maximized') return '';
+		const rules: string[] = [];
+		if (size.w) rules.push(`width: ${size.w}px`);
+		if (size.h) rules.push(`height: ${size.h}px`);
+		return rules.join('; ');
+	});
+
+	function onResizeStart(e: PointerEvent) {
+		if (appState === 'maximized' || !windowEl) return;
+		e.preventDefault();
+		const startW = windowEl.offsetWidth;
+		const startH = windowEl.offsetHeight;
+		const startX = e.clientX;
+		const startY = e.clientY;
+		const onMove = (ev: PointerEvent) => {
+			size = {
+				w: Math.min(Math.max(startW + ev.clientX - startX, MIN_SIZE.w), window.innerWidth),
+				h: Math.min(Math.max(startH + ev.clientY - startY, MIN_SIZE.h), window.innerHeight)
+			};
+		};
+		const onUp = () => {
+			window.removeEventListener('pointermove', onMove);
+			window.removeEventListener('pointerup', onUp);
+		};
+		window.addEventListener('pointermove', onMove);
+		window.addEventListener('pointerup', onUp);
+	}
 
 	// Close plays an exit animation first (window-close keyframe in
 	// layout.css); the store-driven close (taskbar tap) stays instant. When
@@ -53,10 +120,14 @@
 	class="window absolute"
 	class:maximized={appState === 'maximized'}
 	onclick={onWindowClick}
+	bind:this={windowEl}
+	style={windowSizeStyle}
 	use:draggable={{
 		bounds: 'body',
 		handle: '.title-bar',
-		disabled: appState === 'maximized'
+		disabled: appState === 'maximized',
+		position,
+		onDrag
 	}}
 >
 	<div class="window-inner" class:closing>
@@ -67,4 +138,11 @@
 			{@render children()}
 		</div>
 	</div>
+	<!-- Resize grip: bottom-right corner. Hidden while maximized (CSS). -->
+	<div
+		class="resize-handle"
+		role="presentation"
+		aria-hidden="true"
+		onpointerdown={onResizeStart}
+	></div>
 </div>

@@ -173,7 +173,13 @@
 	width: 60%;
 	top: 8%;
 	left: 21%;
-	background-color: var(--color-base-100);
+	/* Slightly translucent pane so the glass title bar has something real to
+	 * see through: the desktop (or windows behind it) reads through the
+	 * frosted header strip, macOS-style. App content never sits on glass —
+	 * every app paints its own solid bg-base-100 over the content area. */
+	background-color: color-mix(in oklab, var(--color-base-100) 80%, transparent);
+	-webkit-backdrop-filter: blur(20px) saturate(140%);
+	backdrop-filter: blur(20px) saturate(140%);
 	border: 1px solid color-mix(in oklab, var(--color-base-content) 18%, transparent);
 	border-radius: var(--radius-box);
 	overflow: hidden;
@@ -189,6 +195,39 @@
 	border-radius: 0;
 	border-left-width: 0;
 	border-right-width: 0;
+}
+
+/* Resize grip: a corner notch that grows on hover, invisible to layouts —
+ * pointer-driven; touch gets touch-action none so the drag isn't stolen by
+ * scrolling. Disabled logic lives in the component (maximized early-return). */
+.window .resize-handle {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 18px;
+	height: 18px;
+	z-index: 20;
+	cursor: nwse-resize;
+	touch-action: none;
+	border-bottom-right-radius: calc(var(--radius-box) - 1px);
+}
+.window .resize-handle::after {
+	content: '';
+	position: absolute;
+	right: 4px;
+	bottom: 4px;
+	width: 8px;
+	height: 8px;
+	border-right: 2px solid color-mix(in oklab, var(--color-base-content) 35%, transparent);
+	border-bottom: 2px solid color-mix(in oklab, var(--color-base-content) 35%, transparent);
+	border-bottom-right-radius: 3px;
+	transition: border-color 140ms ease;
+}
+.window .resize-handle:hover::after {
+	border-color: var(--color-base-content);
+}
+.window.maximized .resize-handle {
+	display: none;
 }
 
 /* Open at ease: fade + slight rise. Animated on the inner shell so the
