@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { appsList, currentApp, closeApp } from '$lib/store/store.svelte';
+	import { appsList, currentApp, windowState, closeApp } from '$lib/store/store.svelte';
 
 	let icon = $derived(appsList.value.find((app) => app.name === currentApp.value)?.svg ?? '');
 </script>
@@ -17,6 +17,64 @@
 		</div>
 	</div>
 	<div class="control-window ml-auto flex h-10 items-center gap-5">
+		<button
+			class="minimize-window flex h-full w-10 items-center justify-center hover:bg-base-200"
+			aria-label="Minimize Window"
+			title="Minimize Window"
+			onclick={() => {
+				windowState.value = 'minimized';
+			}}
+		>
+			<svg
+				width="30px"
+				height="30px"
+				viewBox="0 0 24 24"
+				fill="none"
+				xmlns="http://www.w3.org/2000/svg"
+			>
+				<path
+					d="M5 11C5 10.4477 5.44772 10 6 10H18C18.5523 10 19 10.4477 19 11V13C19 13.5523 18.5523 14 18 14H6C5.44772 14 5 13.5523 5 13V11Z"
+					fill="#6B7280"
+				/>
+			</svg>
+		</button>
+		<button
+			class="maximize-window flex h-full w-10 items-center justify-center hover:bg-base-200"
+			aria-label={windowState.value === 'maximized' ? 'Restore Window' : 'Maximize Window'}
+			title={windowState.value === 'maximized' ? 'Restore Window' : 'Maximize Window'}
+			onclick={() => {
+				windowState.value = windowState.value === 'maximized' ? 'open' : 'maximized';
+			}}
+		>
+			{#if windowState.value === 'maximized'}
+				<!-- restore: two overlapping windows -->
+				<svg
+					width="30px"
+					height="30px"
+					viewBox="0 0 24 24"
+					fill="none"
+					xmlns="http://www.w3.org/2000/svg"
+				>
+					<rect x="4" y="8" width="12" height="12" rx="1" stroke="#6B7280" stroke-width="2" />
+					<path
+						d="M8 8V5C8 4.44772 8.44772 4 9 4H19C19.5523 4 20 4.44772 20 5V15C20 15.5523 19.5523 16 19 16H16"
+						stroke="#6B7280"
+						stroke-width="2"
+					/>
+				</svg>
+			{:else}
+				<!-- maximize: single window -->
+				<svg
+					width="30px"
+					height="30px"
+					viewBox="0 0 24 24"
+					fill="none"
+					xmlns="http://www.w3.org/2000/svg"
+				>
+					<rect x="4" y="4" width="16" height="16" rx="1" stroke="#6B7280" stroke-width="2" />
+				</svg>
+			{/if}
+		</button>
 		<button
 			class="close-window flex h-full w-10 items-center justify-center hover:bg-red-600"
 			aria-label="Close Window"

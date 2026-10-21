@@ -1,4 +1,19 @@
 @import 'tailwindcss';
-@plugin "daisyui" {
-    themes: light --default, business --prefersdark
+@plugin 'daisyui' {
+	themes:
+		light --default,
+		business --prefersdark;
+}
+
+/* Active-app highlights: the desktop says where the window is. */
+.app-open {
+	box-shadow: 0 0 0 2px var(--color-primary);
+}
+.taskbar-open {
+	box-shadow:
+		0 0 0 2px var(--color-base-100),
+		0 0 0 3.5px var(--color-base-content);
+}
+.taskbar-minimized {
+	opacity: 0.55;
 }
