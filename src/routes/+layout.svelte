@@ -17,6 +17,10 @@
 	import Contact from '@components/apps/contact.svelte';
 	import Window from '@components/window.svelte';
 
+	const title = 'ProDeh — Full Stack Developer';
+	const description =
+		'Portfolio of ProDeh, a full-stack developer working with SvelteKit, TypeScript, Python and Go. Rendered as a tiny desktop OS in your browser.';
+
 	let { children } = $props();
 	const isAppRoute = derived(page, ($page) => {
 		if (
@@ -44,6 +48,10 @@
 			backgroundImages.value.find((b) => b.name.startsWith(currentBackgroundImage.value))?.src
 		})`
 	);
+	// Resolved URLs for head tags. The first image is preloaded so the
+	// wallpaper paints immediately instead of appearing after hydration.
+	let firstBgSrc = $derived(backgroundImages.value[0]?.src);
+	let ogImage = $derived($page.url.origin ? $page.url.origin + '/og.png' : '');
 
 	onMount(() => {
 		// Theme
@@ -76,6 +84,27 @@
 		}
 	});
 </script>
+
+<svelte:head>
+	<title>{title}</title>
+	<meta name="description" content={description} />
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f7fa" />
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1f2937" />
+	<meta property="og:title" content={title} />
+	<meta property="og:description" content={description} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={$page.url.origin + '/'} />
+	{#if ogImage}
+		<meta property="og:image" content={ogImage} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
+	{/if}
+	{#if firstBgSrc}
+		<link rel="preload" as="image" href={firstBgSrc} />
+	{/if}
+</svelte:head>
 
 <div class="main-content border-base-300 flex h-screen w-screen flex-col overflow-hidden">
 	<div class="background h-full w-full" id="background-image" style={bgStyle}>

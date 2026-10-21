@@ -6,7 +6,7 @@
 </script>
 
 <div class="window absolute" use:draggable={{ bounds: 'body', handle: '.title-bar' }}>
-	<div class="w-ful flex h-full flex-col items-center">
+	<div class="w-full flex h-full flex-col items-center">
 		<div class="title-bar w-full">
 			<TitleBar />
 		</div>

@@ -1,5 +1,19 @@
 <script lang="ts">
 	import { theme, currentBackgroundImage, backgroundImages } from '$lib/store/store.svelte';
+	import { onMount } from 'svelte';
+
+	// Read localStorage only in onMount so this component stays SSR-safe.
+	let selectedTheme = $state<'light' | 'business'>('light');
+
+	onMount(() => {
+		selectedTheme = localStorage.getItem('Theme') === 'business' ? 'business' : 'light';
+	});
+
+	function onThemeToggle() {
+		selectedTheme = selectedTheme === 'business' ? 'light' : 'business';
+		theme.value = selectedTheme;
+		localStorage.setItem('Theme', selectedTheme);
+	}
 </script>
 
 <div class="settings bg-base-100 flex h-full w-full flex-col gap-3 overflow-y-scroll p-2">
@@ -11,21 +25,8 @@
 				type="checkbox"
 				value="business"
 				class="theme-controller toggle"
-				checked={localStorage.getItem('Theme') == 'business'}
-				onchange={() => {
-					if (localStorage.getItem('Theme')) {
-						if (localStorage.getItem('Theme') == 'business') {
-							localStorage.setItem('Theme', 'light');
-							theme.value = 'light';
-						} else {
-							localStorage.setItem('Theme', 'business');
-							theme.value = 'business';
-						}
-					} else {
-						localStorage.setItem('Theme', 'business');
-						theme.value = 'business';
-					}
-				}}
+				checked={selectedTheme === 'business'}
+				onchange={onThemeToggle}
 			/>
 			<span class="label-text">Business</span>
 		</label>
