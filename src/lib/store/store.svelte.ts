@@ -7,6 +7,8 @@ import { ref } from './helper.svelte';
 import { goto } from '$app/navigation';
 import { page } from '$app/stores';
 import { get } from 'svelte/store';
+import { tick } from 'svelte';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 export type WindowState = 'open' | 'minimized' | 'maximized';
 
@@ -59,6 +61,29 @@ export const appsList = ref([
 export const theme = ref('light');
 
 /**
+ * Flip the theme with a circular reveal from the control that triggered it
+ * (View Transitions API): the old page is snapshotted frozen while the new
+ * theme opens outward — the `::view-transition-new(root)` keyframes in
+ * layout.css read the `--vt-origin-*` vars set here. Reduced motion, no
+ * origin point, or no API support fall back to the plain instant flip.
+ */
+export function setTheme(next: string, origin?: { x: number; y: number }) {
+	const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	if (reducedMotion || !origin || typeof document.startViewTransition !== 'function') {
+		theme.value = next;
+		return;
+	}
+	// Set OUTSIDE the update callback so the frozen old snapshot and the
+	// reveal keyframe share the same origin from the very first frame.
+	document.documentElement.style.setProperty('--vt-origin-x', `${origin.x}px`);
+	document.documentElement.style.setProperty('--vt-origin-y', `${origin.y}px`);
+	document.startViewTransition(async () => {
+		theme.value = next; // the layout's data-theme effect applies on the next flush
+		await tick(); // the "after" snapshot waits until the attribute is really applied
+	});
+}
+
+/**
  * Multi-window model (phase 12): one window per app, so the record key's
  * presence is "open" and its absence is "closed". `windowOrder` is
  * append-on-open/raise; the last open, non-minimized entry is the FOCUSED
@@ -106,6 +131,8 @@ export function toggleMaximize(appName: string) {
  */
 export function openWindow(appName: string) {
 	if (!appsList.value.some((app) => app.name === appName)) return;
+	// An open/raise resurrects an app that is mid-fold in its close animation.
+	cancelPendingClose(appName);
 	const previous = windows.value[appName];
 	// Reorder first (raise), then restore the slot's state.
 	windowOrder.value = [...windowOrder.value.filter((name) => name !== appName), appName];
@@ -124,10 +151,40 @@ export function closeWindow(appName: string) {
 	windowOrder.value = windowOrder.value.filter((name) => name !== appName);
 }
 
-/** Fold a window into the taskbar; the focus line-up moves on without it. */
+/**
+ * Windows playing their exit fold: they stay in `windows` (rendered, still
+ * raisable-looking) while `.window-inner.closing` animation runs in the
+ * Window component.
+ */
+export const closingApps = new SvelteSet<string>();
+/** 140ms — must match the window-close keyframe duration in layout.css. */
+const CLOSE_ANIMATION_MS = 140;
+/** Live close timers (module state; the reactive half lives in `closingApps`). */
+const closingTimers = new SvelteMap<string, ReturnType<typeof setTimeout>>();
+
+/** Cancel an in-flight animated close (an open resurrects the app mid-fold). */
+function cancelPendingClose(appName: string) {
+	const timer = closingTimers.get(appName);
+	if (timer) {
+		clearTimeout(timer);
+	}
+	closingTimers.delete(appName);
+	closingApps.delete(appName);
+}
+
+/**
+ * Fold a window into the taskbar; the focus line-up moves on without it.
+ * When the URL points at this app (it was the focused one), the browser
+ * heads home instead — minimizing hands focus back to the bare desktop.
+ */
 export function minimizeWindow(appName: string) {
 	if (!(appName in windows.value)) return;
 	windows.value = { ...windows.value, [appName]: 'minimized' };
+	const route = appsList.value.find((app) => app.name === appName)?.route;
+	if (route && get(page).url.pathname === `/${route}`) {
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal navigation to the bare desktop
+		goto('/');
+	}
 }
 
 /**
@@ -145,17 +202,37 @@ export function openApp(name: string) {
 }
 
 /**
- * Close a window; navigate home only when the URL actually pointed at that
- * app (closing a background window must not touch the URL).
+ * Close a window through its exit animation. The window keeps rendering
+ * (still in `windows`, flagged in `closingApps`) while the fold plays, then
+ * the URL goes home only when it actually pointed at this app — closing a
+ * background window never touches the URL. Reduced motion closes the old
+ * instant way. Every user-facing close path funnels here, so the animation
+ * is uniform (taskbar, Home, Escape, title bar X, browser back button).
  */
 export function closeApp(appName: string) {
-	if (!appName) return;
+	if (!appName || !(appName in windows.value)) return;
+	if (closingApps.has(appName)) return; // already mid-fold
 	const route = appsList.value.find((app) => app.name === appName)?.route;
-	closeWindow(appName);
-	if (route && get(page).url.pathname === `/${route}`) {
-		// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal navigation to the bare desktop
-		goto('/');
+	const finishClose = () => {
+		closeWindow(appName); // no-op if a restore or a URL change beat the timer
+		if (route && get(page).url.pathname === `/${route}`) {
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- internal navigation to the bare desktop
+			goto('/');
+		}
+	};
+	if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		finishClose();
+		return;
 	}
+	closingApps.add(appName);
+	closingTimers.set(
+		appName,
+		setTimeout(() => {
+			closingTimers.delete(appName);
+			closingApps.delete(appName);
+			finishClose();
+		}, CLOSE_ANIMATION_MS)
+	);
 }
 
 /** The layout swaps to the phone branch under this width. */

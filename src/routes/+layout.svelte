@@ -7,7 +7,6 @@
 		windowOrder,
 		focusedApp,
 		openWindow,
-		closeWindow,
 		closeApp,
 		currentBackgroundImage,
 		backgroundImages,
@@ -78,8 +77,8 @@
 		}
 
 		// Wallpaper crossfade bookkeeping: on change the outgoing layer lingers
-		// underneath while the new one fades in above; the old one is dropped
-		// once the fade is done (650ms > artwork 420ms).
+		// underneath while the new one fades in and settles; the old one is
+		// dropped once its recede is done (650ms > artwork 420ms).
 		$effect(() => {
 			const src = bgSrc;
 			untrack(() => {
@@ -98,20 +97,30 @@
 		// changes. (Before, reading currentApp here made any set from an app
 		// click re-run the effect while the URL was still '/' — closeApp then
 		// cancelled the in-flight deep-link navigation, so clicks did nothing.)
+		//
+		// The close-on-'/' rule keys off the PREVIOUS path, not the focused
+		// app: "back" closes the window whose URL you just left. Keying off
+		// the focused window broke once minimize started navigating home —
+		// that goto('/') would have closed the next background window.
+		let lastPath = '';
 		$effect(() => {
 			const path = $page.url.pathname;
 			const name = appsList.value.find((app) => `/${app.route}` === path)?.name;
 			untrack(() => {
 				if (path === '/') {
-					// Bare URL — the browser just left a deep link (initial load
-					// or back button): close the window that URL belonged to,
-					// i.e. the focused one. Background windows survive.
-					const app = focusedApp();
-					if (app) closeWindow(app);
+					// Bare URL — the browser just left a deep link (initial
+					// load, back button, or minimize-to-home): close the
+					// window that URL belonged to. Animated, like every
+					// other close; minimized windows stay in the taskbar,
+					// background windows survive.
+					const fromApp = appsList.value.find((app) => `/${app.route}` === lastPath)?.name;
+					const fromState = fromApp ? windows.value[fromApp] : undefined;
+					if (fromApp && fromState && fromState !== 'minimized') closeApp(fromApp);
 				} else if (name) {
 					openWindow(name);
 				}
 			});
+			lastPath = path;
 		});
 	});
 
@@ -165,10 +174,11 @@
 	{:else}
 		<div class="background relative h-full w-full">
 			<!-- Wallpaper stack: outgoing layer rests under the top one while it
-			     fades in, so changing wallpapers is a crossfade, not a hard cut. -->
+			     fades in and settles, drifting wider underneath so changing
+			     wallpapers is a depth crossfade, not a hard cut. -->
 			{#if leavingBg}
 				<div
-					class="wallpaper-layer absolute inset-0"
+					class="wallpaper-layer wallpaper-leave absolute inset-0"
 					style="background-image: url({leavingBg})"
 					aria-hidden="true"
 				></div>
