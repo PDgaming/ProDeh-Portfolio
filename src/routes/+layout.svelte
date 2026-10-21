@@ -31,6 +31,12 @@
 		'Portfolio of ProDeh, a full-stack developer working with SvelteKit, TypeScript, Python and Go. Rendered as a tiny desktop OS in your browser.';
 
 	let { children } = $props();
+
+	// Wallpaper crossfade state: the outgoing layer keeps rendering under the
+	// current one until its fade window elapses (see the onMount effect).
+	let shownBg = $state<string | undefined>(undefined);
+	let leavingBg = $state<string | undefined>(undefined);
+	let leaveTimer: ReturnType<typeof setTimeout> | undefined = undefined;
 	const appComponents: Record<string, Component> = {
 		'About Me': AboutMe,
 		Projects: Projects,
@@ -39,10 +45,8 @@
 		Contact: Contact,
 		Terminal: Terminal
 	};
-	let bgStyle = $derived(
-		`background-image: url(${
-			backgroundImages.value.find((b) => b.name.startsWith(currentBackgroundImage.value))?.src
-		})`
+	let bgSrc = $derived(
+		backgroundImages.value.find((b) => b.name.startsWith(currentBackgroundImage.value))?.src
 	);
 	// Resolved URLs for head tags. The first image is preloaded so the
 	// wallpaper paints immediately instead of appearing after hydration.
@@ -72,6 +76,21 @@
 				currentBackgroundImage.value = localBackground;
 			}
 		}
+
+		// Wallpaper crossfade bookkeeping: on change the outgoing layer lingers
+		// underneath while the new one fades in above; the old one is dropped
+		// once the fade is done (650ms > artwork 420ms).
+		$effect(() => {
+			const src = bgSrc;
+			untrack(() => {
+				if (!src || shownBg === src) return;
+				leavingBg = shownBg;
+				shownBg = src;
+				clearTimeout(leaveTimer);
+				leaveTimer = setTimeout(() => (leavingBg = undefined), 650);
+			});
+			return () => clearTimeout(leaveTimer);
+		});
 
 		// URL drives the FOCUSED window only; background windows just exist.
 		// Unknown paths leave the state alone — +error.svelte handles those views.
@@ -144,7 +163,28 @@
 		<!-- of the device branch, so keep the children slot outside the {#if}. -->
 		{@render children()}
 	{:else}
-		<div class="background h-full w-full" id="background-image" style={bgStyle}>
+		<div class="background relative h-full w-full">
+			<!-- Wallpaper stack: outgoing layer rests under the top one while it
+			     fades in, so changing wallpapers is a crossfade, not a hard cut. -->
+			{#if leavingBg}
+				<div
+					class="wallpaper-layer absolute inset-0"
+					style="background-image: url({leavingBg})"
+					aria-hidden="true"
+				></div>
+			{/if}
+			{#key shownBg}
+				{#if shownBg}
+					<div
+						class="wallpaper-layer wallpaper-enter absolute inset-0"
+						style="background-image: url({shownBg})"
+						aria-hidden="true"
+					></div>
+				{/if}
+			{/key}
+			<!-- Theme-aware veil: keeps desktop labels, taskbar and windows
+			     readable over any photo, in either theme. -->
+			<div class="wallpaper-scrim absolute inset-0" aria-hidden="true"></div>
 			<div class="desktop">
 				<Desktop />
 			</div>
@@ -168,7 +208,7 @@
 </div>
 
 <style>
-	.background {
-		background-size: cover;
-	}
+	/* Wallpaper layers + scrim live in layout.css (shared primitives); the
+	 * container just needs stacking context right, which `relative` above
+	 * provides. */
 </style>
