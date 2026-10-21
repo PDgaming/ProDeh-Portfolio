@@ -88,10 +88,16 @@ export function windowStateOf(name: string): WindowState {
 /** Open ↕ maximized toggle for one window's title bar button. */
 export function toggleMaximize(appName: string) {
 	const current = windowStateOf(appName);
-	windows.value = {
-		...windows.value,
-		[appName]: current === 'maximized' ? 'open' : 'maximized'
-	};
+	if (current === 'maximized') {
+		// Restore in place — no focus change.
+		windows.value = { ...windows.value, [appName]: 'open' };
+		return;
+	}
+	// Maximize also FOCUSES: a maximized window should never end up hidden
+	// behind others. Raise first (raises + URL deep link); openWindow keeps an
+	// existing `maximized` state instead of resetting it.
+	windows.value = { ...windows.value, [appName]: 'maximized' };
+	openApp(appName);
 }
 
 /**
